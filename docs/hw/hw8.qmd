@@ -1,0 +1,359 @@
+---
+title: "DATA 304 Homework 8"
+author: "Lily McAboy"
+date: "2/24/2025"
+format:
+  html:
+    embed-resources: true
+    code-tools: true
+---
+```{r}
+#| include: false
+library(vegawidget)
+library(dplyr)
+library(reticulate)
+library(altair)
+library(jsonlite)
+library(htmltools)
+library(tidyverse)
+library(tidyr)
+library(vegabrite)
+pd <- import("pandas")
+```
+
+```{python}
+#| include: false
+import altair as alt
+import pandas as pd
+import ssl
+import certifi
+import urllib.request
+```
+
+# Exercise 1
+
+### Import Data
+
+```{r}
+supply_demand <- fromJSON("https://calvin-data304.netlify.app/data/swd-lets-practice-ex-2-3.json")
+```
+
+```{python}
+supply_demand = pd.read_json("https://calvin-data304.netlify.app/data/swd-lets-practice-ex-2-3.json")
+```
+
+```{r}
+# Wrangle the dataset to find count
+long_supply_demand <- supply_demand |> 
+  pivot_longer(
+    cols = c(capacity, demand),
+    names_to = "type",
+    values_to = "value"
+  )
+```
+
+```{python}
+long_supply_demand = supply_demand.melt(id_vars=["date"], var_name="type", value_name="Value")
+```
+
+## Graph 1: Dodged Bar Chart
+
+I realized that there is an issue with Python Altair. When I make date type "Temporal", it will not xOffset. If I make it ordinal, it will xOffset. 
+
+[Python Altair Grouped Bar Graph Example](https://altair-viz.github.io/gallery/grouped_bar_chart2.html)
+
+```{python}
+alt.Chart(long_supply_demand).mark_bar().encode(
+  x="date:O",
+  y="Value:Q",
+  xOffset="type:N",
+  color="type:N"
+)
+```
+
+
+## Graph 2: Line Chart
+```{r}
+s_line <- vl_chart() |>
+  vl_mark_line(color = 'orange', size = 3) |>
+  vl_encode_y(field = 'capacity:Q')
+
+d_line <- vl_chart() |>
+  vl_mark_line(color = 'blue', size = 3) |>
+  vl_encode_y(field = 'demand:Q')
+
+vl_layer(s_line, d_line) |>
+  vl_encode_x('date:T', title = 'Date') |>
+  vl_encode_y(type = 'quantitative') |>
+  vl_axis_y(title = '') |>
+  vl_add_properties(width = 400, height = 300) |>
+  vl_add_data(supply_demand)
+```
+
+
+## Graph 3: Stacked Bar Chart with Different Sized Bars
+
+```{r}
+vl_chart(width = 300, height = 300) |>
+  vl_mark_bar() |>
+  vl_encode_x("date:T") |>
+  vl_encode_y("value:Q") |>
+  vl_encode_color("type") |>
+  vl_encode_size(
+    "type:N", 
+    scale = list(
+      domain = list("capacity", "demand"),
+      range = list(5, 10) 
+    )
+  ) |>
+  vl_add_data(long_supply_demand)
+```
+
+## Graph 4: Stacked Bar Chart
+
+```{r}
+vl_chart(width = 300, height = 300) |>
+  vl_mark_bar() |>
+  vl_encode_x("date:T") |>
+  vl_encode_y("value:Q") |>
+  vl_encode_color("type") |>
+  vl_add_data(long_supply_demand)
+```
+
+
+## Graph 5: Connected Point Chart
+
+```{python}
+
+s_circle = alt.Chart(supply_demand).mark_circle(color='orange', size=100).encode(
+    x='date:T',
+    y='capacity:Q'
+)
+
+d_circle = alt.Chart(supply_demand).mark_circle(color='blue', size=100).encode(
+    x='date:T',
+    y='demand:Q'
+)
+
+lines = alt.Chart(supply_demand).mark_rule().encode(
+    x='date:T',
+    y='capacity:Q',
+    y2='demand:Q'
+)
+chart = s_circle + d_circle + lines
+chart.properties(width=400, height=300)
+
+```
+
+## Graph 6: Layered Point and Line Chart
+```{r}
+d_point <- vl_chart() |>
+  vl_mark_point(color = 'blue', size = 20) |>
+  vl_encode_y(field = 'demand:Q')
+
+vl_layer(d_point, d_line) |>
+  vl_encode_x('date:T', title = 'Date') |>
+  vl_encode_y(type = 'quantitative') |>
+  vl_axis_y(title = '') |>
+  vl_config_title('2019 Supply and Demand') |>
+  vl_add_properties(width = 400, height = 300) |>
+  vl_add_data(supply_demand)
+```
+
+
+# Exercise 2
+
+### a. There was some question as to just what perc meant in this data set. Create a graphic that shows the sum of all the values of perc in each year separated by men and women. Explain what your graphic reveals about what perc means.
+
+```{python}
+jobs = pd.read_json("https://cdn.jsdelivr.net/npm/vega-datasets@2.8.0/data/jobs.json")
+```
+
+Python Altair gives this error if the data set is too large: ! altair.utils.data.MaxRowsError: The number of rows in your dataset is greater than the maximum allowed (5000).
+
+So for the sake of the exercise, I will filter out rows where count = 0 and years greater than 1870.  
+```{python}
+filtered_jobs = jobs[(jobs['count'] != 0) & (jobs['year'] > 1870)]
+```
+
+```{python}
+alt.Chart(filtered_jobs, title="Sum of Gender Differences For All Jobs").mark_bar().encode(
+    alt.X('year:O').title('Year'),
+    alt.Y('sum(perc):Q').title('Percentage'),
+    alt.Color('sex:N'),
+    alt.Column('sex:N').title('')
+)
+```
+
+The graphic shows the aggregated sum for each percentage for each year per sex. For example, all of the jobs for 1880 for men is around 85%. This means that the work demographic for men was ~85% in 1880, and women made up ~15% of the workforce. For each year, the addition of the female and male percentages should equal 100%. 
+
+### b. Now modify the graphic from class so that there are facets for 4 different years (your choice which years), scatterplots that show the percent of men and of women who worked in various jobs during those years, and format=".0%" is used (in the appropriate place) to display perc as a percentages (multiplied by 100 with a % sign appended).
+
+### Facets
+
+```{r}
+jobs <- fromJSON("https://cdn.jsdelivr.net/npm/vega-datasets@2.8.0/data/jobs.json")
+```
+
+### Here is a gross amount of data wrangling that I had to do to put it into the data formatting I wanted
+```{r}
+filtered_year_jobs_wide <- jobs |>
+  select(job, sex, year, perc) |>
+  pivot_wider(names_from = year, values_from = perc, names_prefix = "perc_") |>
+  pivot_longer(cols = starts_with("perc_"), 
+               names_to = "compare_year", 
+               values_to = "perc_other",
+               names_prefix = "perc_") |>
+  filter(compare_year != "2000") 
+
+perc_2000_data <- jobs |>
+  filter(year == 2000) |>
+  select(job, sex, perc) |>
+  rename(perc_2000 = perc)
+
+jobs_comparison <- jobs |>
+  filter(year != 2000) |>
+  left_join(perc_2000_data, by = c("job", "sex")) |> 
+  rename(perc_other = perc)
+
+jobs_comparison <- filter(jobs_comparison, year %in% c(1850, 1900, 1950, 1970, 2000))
+
+jobs_comparison <- jobs_comparison |> 
+  mutate(perc_other = perc_other * 100, 
+         perc_2000 = perc_2000 * 100)
+```
+
+```{r}
+vl_chart() |>
+  vl_mark_circle() |>
+  vl_encode_x("perc_other:Q", title = "Percentage For Year") |> 
+  vl_scale_x(type = "symlog", constant = 0.00001) |>  
+  vl_encode_y("perc_2000:Q", title = "2000 (%)") |> 
+  vl_scale_y(type = "symlog", constant = 0.00001) |>  
+  vl_facet_column("year:N", title = "") |>
+  vl_encode_tooltip_array(list("job", "sex", "compare_year", "perc_other", "perc_2000")) |>  
+  vl_add_properties(
+    title = list( 
+      text = "Comparison of Occupation Percentages: 2000 vs Other Years",
+      subtitle = "Each dot represents an occupation. Hover to see details."
+    )) |>
+  vl_add_data(jobs_comparison)
+
+```
+
+### c. Redo part b but show the percentage of men who worked in various jobs and the percentage of women who worked in various jobs. (Part a should have convinced you that this is NOT what perc is in the original data set.)
+
+I am a bit confused by this question so I will make a couple of graphs to show what I thought it meant. 
+
+```{r}
+vl_chart() |>
+  vl_mark_circle() |>
+  vl_encode_x("perc_other:Q", title = "Percentage For Year") |> 
+  vl_scale_x(type = "symlog", constant = 0.00001) |>  
+  vl_encode_y("perc_2000:Q", title = "2000 (%)") |> 
+  vl_scale_y(type = "symlog", constant = 0.00001) |>  
+  vl_facet_column("year:N", title = "") |>  
+  vl_encode_color("sex:N", title = "Sex") |>
+  vl_scale_color(
+    domain = list("men", "women"),
+    range = list("lightblue", "pink")
+  ) |>
+  vl_encode_tooltip_array(list("job", "sex", "compare_year", "perc_other", "perc_2000")) |>  
+  vl_add_properties(
+    title = list( 
+      text = "Comparison of Occupation Percentages: 2000 vs Other Years",
+      subtitle = "Each dot represents an occupation. Hover to see details."
+    )) |>
+  vl_add_data(jobs_comparison)
+
+```
+
+```{r}
+jobs_sex <- jobs |>
+  pivot_wider(names_from = sex, values_from = perc)
+```
+
+```{r}
+vl_chart() |>
+  vl_mark_point() |>
+  vl_pivot("sex", groupby = list("job", "year"), value = "perc") |>
+  vl_encode_x("women:Q") |>
+  vl_scale_x(type = "symlog", constant = 0.00001) |>
+  vl_encode_y("men:Q") |>
+  vl_encode_color("year:O") |>
+  vl_scale_y(type = "symlog", constant = 0.00001) |> 
+  vl_add_properties(
+    title =  list( 
+      text = "Percent of people working various jobs"
+      )) |>
+  vl_add_data(jobs) 
+```
+
+I think that the blue scale for year is kind of confusing - but I do see a trend that a lot of light colored (earlier years) dots go up along the y axis, which shows that earlier centuries had less women in the workforce than men. 
+
+# Exercise 3
+
+### Read in Data
+
+```{python}
+gas_prices = pd.read_csv("https://calvin-data304.netlify.app/data/pump_price_for_gasoline_us_per_liter.csv")
+country_codes = pd.read_csv("https://raw.githubusercontent.com/lukes/ISO-3166-Countries-with-Regional-Codes/master/all/all.csv")
+
+country_codes.rename(columns={"name": "country"}, inplace=True)
+```
+
+### Left Outer Join 
+```{python}
+price_and_code = country_codes.merge(gas_prices, on="country", how = "left")
+```
+
+I first tried left joining country codes onto gas prices, but since gas prices only had 182 rows and country codes has 249 rows, I switched them so the new price_and_code merged set doesn't lose any of the countries. 
+
+### Graphics
+```{python}
+gas_prices_long = gas_prices.melt(id_vars=["country"], var_name="Year", value_name="Price")
+price_and_code_long = country_codes.merge(gas_prices_long, on = "country", how = "left")
+```
+
+### Graph 1: Change in Gas Prices By Region By Year
+```{python}
+alt.Chart(price_and_code_long, title = "Gas Prices Per Region").mark_circle(size=100).encode(
+  x = alt.X("Year:T", title = "Year"),
+  y = alt.Y("average(Price):Q", title = "Price in US Dollars"),
+  color = alt.Color("region:N")
+).properties(
+    width=600,
+    height=400
+)
+```
+
+### Graph 2: Heat Map By Year By Sub-Region
+
+```{python}
+alt.Chart(price_and_code_long, title = "Gas Prices Per Region").mark_rect().encode(
+  y=alt.Y('sub-region:N', title= '', sort='-color'),
+  x=alt.X('Year:O', title = 'Year', axis=alt.Axis(labelAngle=0)),
+  color=alt.Color('Price:Q',title = 'Price', scale=alt.Scale(scheme='inferno'))
+).configure_axis(
+    grid=True,
+    tickBand='extent'
+).properties(
+    width=500,
+    height=500
+)
+```
+
+### Graph 3: 
+
+```{python}
+alt.Chart(price_and_code, title = "Sub-Region Gas Prices 2000 vs. 2016").mark_circle(opacity=0.7, size = 100).encode(
+    x=alt.X('2016:Q', title='Price in 2016 (USD)'),
+    y=alt.Y('2000:Q', title='Price in 2000 (USD)'),
+    color='sub-region:N',
+    tooltip=['country:N', 'region:N', 'alpha-3:N', '2000:Q', '2016:Q']
+).properties(
+    width=500,
+    height=600
+)
+```
+
