@@ -22,7 +22,6 @@ pd <- import("pandas")
 ```
 
 ```{python}
-#| include: false
 import altair as alt
 import pandas as pd
 import ssl
@@ -307,7 +306,7 @@ country_codes.rename(columns={"name": "country"}, inplace=True)
 price_and_code = country_codes.merge(gas_prices, on="country", how = "left")
 ```
 
-I first tried left joining country codes onto gas prices, but since gas prices only had 182 rows and country codes has 249 rows, I switched them so the new price_and_code merged set doesn't lose any of the countries. 
+I first tried left joining country codes onto gas prices, but since gas prices only had 182 rows and country codes has 249 rows, I switched them so the new price_and_code merged set doesn't "lose" any of the countries. Though, this also means that there were a good chunk of countries that either didn't match up so may have nulls. If I inspect my dataset, I can see that West Sahara is an example where we joined it to gas prices but there is no data for gas prices. 
 
 ### Graphics
 ```{python}
