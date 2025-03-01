@@ -1,0 +1,211 @@
+---
+title: "DATA 304 Homework 9"
+author: "Lily McAboy"
+date: "3/1/2025"
+format:
+  html:
+    embed-resources: true
+    code-tools: true
+---
+
+```{r}
+#| include: false
+library(vegawidget)
+library(dplyr)
+library(reticulate)
+library(altair)
+library(jsonlite)
+library(htmltools)
+library(tidyverse)
+library(tidyr)
+library(vegabrite)
+pd <- import("pandas")
+```
+
+```{python}
+import altair as alt
+import pandas as pd
+import ssl
+import certifi
+import urllib.request
+from vega_datasets import data
+```
+
+# Exercise 1: Wilke
+
+### a. Read chapter 4 of Wilke. List two or three things you learned about using color from this chapter
+
+One of the more interesting things that I learned was that color should not indicate an order if you are using them to distinguish categorical variables. For example, it may be difficult to scale for dark and light contrasts. Having different colors of blue for a non ordered color scale would indicate to the audience that there is an order, even if there is not. When using color to map data values, it is effective to show a diverging color scale if values can take on positive and negative values. You have to be careful of using diverging values, because the "middle" color indicates a meaningful midpoint. Wilke uses the example of white people in Texas, where 50% tips the scale of being the minority or majority. 
+
+### b. Read chapter 5 of of Wilke. Chapter 5 list a wide range of graphic types. What is the organization scheme Wilke uses to group them? What is the most interesting thing you learned from this chapter?
+
+Wilke groups graphs into what they measure, such as amounts, proportions, density, and then x-y relationships. This means that some graphs are in two different categories, such as bar graphs being in amounts but also proportions. I found it interesting that Wilke suggests that sometimes it's helpful to distort the map into a cartogram, though I can't really think of a situation where that might be helpful besides the size aspect. I also think that the quantile dot plot looks interesting to show a ridgeline plot with the distributions. I think that it would make the story of the graphic clearer and more concise. 
+
+### c. By now, you should be able to make quite a few of the graphics shown in chapter 5. Are there some you would not know how to make (yet) based on what we have done in class? List several that you don’t know how to make – choose the ones you would be most interested in learning how to make and say why you are interested.
+
+I wouldn't know how to make a parallel set, density contour, correlogram, or half-eyes. I think that I am really interested in parallel sets. I have seen them used in energy visualizations or cost breakdowns and I think they are really effective in showing proportions of a whole. Also, I think they can be effective by themselves or if there are multiple parallel set layers on a graphic. I also am interested in correlograms because they remind me of the wolf picture in the Tufte book and would be interesting to see both in a quantitative and categorical context. My last visualization that is interesting is a violin plot. 've seen them being used in many contexts but never have actually made one myself. For example, in my STAT 245 class, we could make violin plots but they confused me at the time so I never attempted one. 
+
+### d. See if you can figure out how to make at least one of the types of graphic listed in part c. You may need to do some experimenting or to consult the documentation or example galleries (for Vega-Lite, vegabrite, altiar, Altair, etc.).
+
+**If you like, you might try to recreate one of the graphics in chapters 7-16 or do some variation on the theme. Note: You can find all the code used to make the book at https://github.com/clauswilke/dataviz/tree/master. The book predates quarto, so it uses .Rmd files, which are very similar. The graphics in the book are created using ggplot2, so you won’t be able to directly use that code, but you should be able to find the data sources that he used and create the graphics in Vega-Lite.**
+
+**Alternatively, you can use some other data set – but it should not be a data set used in documentation or galleries about how to make Vega-Lite graphics: I’m not interested in having you merely copy someone else’s code.**
+
+[Violin in Altair](https://altair-viz.github.io/gallery/violin_plot.html)
+
+I am going to use the supply and demand data from the last homework (homework 8)
+
+```{python}
+supply_demand = pd.read_json("https://calvin-data304.netlify.app/data/swd-lets-practice-ex-2-3.json")
+```
+
+```{python}
+long_supply_demand = supply_demand.melt(id_vars=["date"], var_name="type", value_name="Value")
+
+```
+
+This first graph isn't that good, but I thought it was interesting in how it overlapped so I kept it. 
+```{python}
+alt.Chart(long_supply_demand).transform_density(
+  'Value', as_=['Value', 'density'],
+  groupby=['type']
+).mark_area(orient='horizontal').encode(
+  alt.X('density:Q').stack('center'),
+  alt.Y('Value:Q'),
+  alt.Color('type:N')
+)
+```
+
+```{python}
+alt.Chart(long_supply_demand).transform_density(
+  'Value', as_=['Value', 'density'],
+  groupby=['type']
+).mark_area(orient='horizontal').encode(
+  alt.X('density:Q', axis = None).stack('center'),
+  alt.Y('Value:Q'),
+  alt.Color('type:N')
+).facet(
+  column = 'type:N'
+)
+```
+
+### e. Chapters 6 - 16 are orgainized by graphic types. You have already read some of this material. Pick one chapter that is related to your graphic in part d and give some examples of how what you learned in that chapter affected how you created your graphic.
+
+I was looking at chapter 9: Visualizing many distributions at once. 
+
+One of the shortcomings of Violin plots is that if you don't have a lot of points, then it is not as good at conveying information. I was wondering if this was an issue with my graph, and I feel as though that there are not enough points for a violin plot, but at the same time, because of how extreme the distributions are and how different they look, it is still interesting to look at and can still convey some information. I also though that jittering the plots may make it look more confusing since the columns are faceted so the reader may be confused and will look for a numeric x axis. 
+
+# Exercise 2: More Pie
+
+### a. Create side-by-side pie charts with good labeling and appropriate choice of colors. Some more things to consider: Should you present using counts or percentages? How will you deal with the nonresponders?
+
+I made two pie charts - one with count and one with percentages, but when I add the .f% to the pie chart, it fails to render so I am unable to add a percentage label. I also kept the nonresponders because it may give insightful information for the number of people who received the survey, even though they didn't necessarily respond to it. 
+
+```{r}
+survey_response <- read.csv("https://calvin-data304.netlify.app/data/likert-survey.csv")
+```
+
+```{python}
+survey_response = pd.read_csv('https://calvin-data304.netlify.app/data/likert-survey.csv')
+```
+
+```{python}
+
+base = alt.Chart(survey_response).encode(
+    alt.Theta("count:Q").stack(True),
+    alt.Color("response:N")
+)
+
+pie = base.mark_arc(outerRadius=120)
+text = base.mark_text(radius=140, size=20).encode(text="count:N")
+
+(pie+text).facet(
+  column='year:N',
+  title = "Survey Responses"
+)
+```
+
+```{python}
+survey_response['Percentage'] = ((survey_response['count']/survey_response['count'].sum()) * 100).round(1)
+```
+
+### This one shows the percentages
+```{python}
+base = alt.Chart(survey_response).encode(
+    alt.Theta("Percentage:Q").stack(True),
+    alt.Color("response:N")
+)
+
+pie = base.mark_arc(outerRadius=120)
+text = base.mark_text(radius=140, size=20).encode(
+  text=alt.Text("Percentage:Q", format=".1f")
+  )
+
+(pie+text).facet(
+  column='year:N',
+  title = "Percentage of Survey Responses"
+)
+```
+
+
+### b. Create some other kind of graphic to visualize the same data.
+
+```{r}
+vl_chart() |>
+  vl_add_data(survey_response) |>
+  vl_mark_circle(size = 100) |>
+  vl_encode_x(field = "count", type = "quantitative", title = "") |>
+  vl_encode_y(field = "response", type = "nominal", title = "Response Type", sort = "count") |>
+  vl_encode_color("year", title = "Year") |>
+  vl_encode_order(field = "count", sort = "descending")
+```
+
+### c. Comment on the pros and cons of your two (or more) graphics. Which would you recommend (for what purposes)?
+
+I might be biased but I don't like pie charts so I would recommend my dot plot. I will say that the pie chart is helpful because it shows percentage of the whole, so we can see that about 30% of the surveyed "agreed." In the dotplot, we can't really see percentages relative to other responses. In the dotplot, it is helpful because we can see very clearly that last year's disagree has less frequency than last year's strongly disagree. We also can use color to differentiate between the years rather than response type, making us only have to differentiate between two variables rather than six. 
+
+# Exercise 3: Maps
+
+### a. Create a choropleth map of the United States (by county or by state) or the worlds (by country) using any data you like. See the maps slides for some possibilities, but feel free to get creative with your data.
+
+```{python}
+import kagglehub
+
+# Download latest version
+path = kagglehub.dataset_download("joelhanson/coronavirus-covid19-data-in-the-united-states")
+
+print(path)
+```
+
+```{python}
+covid = pd.read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
+```
+
+```{python}
+covid_aggregate = covid.groupby(["fips", "county", "state"], as_index=False)[["cases", "deaths"]].sum()
+```
+
+```{python}
+geo_url = "https://vega.github.io/vega-datasets/data/us-10m.json"
+```
+
+```{python}
+covid_aggregate["proportion"] = (
+    covid_aggregate["deaths"].fillna(0) / covid_aggregate["cases"].replace(0, pd.NA)
+).fillna(0)
+
+```
+
+```{python}
+alt.Chart(alt.topo_feature(geo_url, "counties")).mark_geoshape().encode(
+    color=alt.Color("proportion:Q", scale=alt.Scale(scheme="blues")),
+    tooltip=["state:N", "county:N","proportion:Q"],
+).transform_lookup(
+    lookup="id",
+    from_=alt.LookupData(covid_aggregate, "fips", ["proportion","county", "state"])
+).project("albersUsa").properties(width = 600, height = 400, title = "Percentage of COVID Deaths of COVID Cases Per County" 
+)
+
+```
+
+I made a graph of the percentage of COVID deaths based on the number of COVID cases. I did this to try to avoid the issue of making a population graph. I didn't want to show the number of COVID deaths or the number of cases, but rather the percentage of people who die from COVID based on the number of cases so it would hopefully balance out. It seems like more people in the South from Georgia, South Carolina, Louisianna, and Texas had a higher proportion of deaths than other counties in the east coast. If I was able to, I would've also liked to have the data of what COVID prevention policies looked like and if I would be able to see an association of that with the percentage of COVID deaths.   
