@@ -18,3 +18,5 @@ format:
 [Homework8](hw/hw8.html)
 
 [Homework9](hw/hw9.html)
+
+[Final Exam](hw/FinalPortfolio.html)
