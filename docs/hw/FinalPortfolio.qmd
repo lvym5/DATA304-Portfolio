@@ -390,4 +390,16 @@ I allow the user to zoom in or out on the twins datasets. One issue is that I wa
 
 ### a. Not learned in class
 
+In the customer touchpoints graph, I wanted to show the number of touchpoints along with a rate of change, but in class, we hadn't really done a chart that has a text layer on top of it, so it was a little difficult because I didn't know how to label the text correctly. At the default, it overlayed on the lines so I had to experiment with offsets. 
+
+I am unsure if this was "new" since I knew it was possible but we hadn't really done it before, but in the Tanzania graphs, I used approximately 5 layers. In order to "debug" as I created the layers in vegaBrite, I ended up combining layers into smaller chunks and then taking the chunks and layering those. Even though the first set of layers aren't actually necessary, it did help the general organization and debugging process. 
+
+Not related to the pure graphics, but a lot of this final portfolio is a large amount of data wrangling that I had to learn. I know a lot of wrangling principles but only in Python, so learning in R was a challenge. Some of the biggest issues I ran into was cleaning up data column names. For example, I got world data from the World Bank, so for some reason, the year names started with x and wouldn't register as an integer. I had to use some regex to fix that (yay Discrete Math 2!)
+
 ### b. Principles of Good Graphics
+
+When I first started this exam, I was really worried because I couldn't think of a "good" graphic for twins or kits since the only ideas I had were my original "bad" charts from a few weeks ago. I think that one of the best pieces of advice that I got this semester is if I have data but don't know how to model it, to draw as many graphs as possible. This is from Knaflic's solution 2.3 on page 69 of "Storytelling with Data." I spent a lot of time drawing a bunch of types of graphs, even if they were bad or ones I knew I didn't want to make, but it led me to have better ideas later and allowed me to come up with a more intuitive graph. I also followed some of Knaflic's advice on page 95 where he suggests pulling in a friend or colleague to see if it's intuitive to them. I showed my parents and brother the touchpoints graph and they thought it condensed the data without losing the main message. They thought the original first graph (the bad one we had to fix) was too confusing and didn't like the stacked bars, but my graph was simple and easy to read. 
+
+One piece of advice I took from Wilke was from section 19.1, where he talks about taking out color when color produces unnecessary or confusing information. In my "masterpiece" of the GDP vs. food production, I originally didn't have a food production dropdown selector, and originally put all of the data points onto the graph and coloring by production type. The only issue with this was that there were 20 something food production options, and adding 20 categorical variables made it hard to see overall trends, so I opted to allow the user to choose the country and the food type. 
+
+
